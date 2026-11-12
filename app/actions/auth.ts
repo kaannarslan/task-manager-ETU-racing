@@ -38,9 +38,12 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     if (error.message.includes("already registered")) {
       return { ok: false, error: "Bu e-posta ile zaten bir hesap var." };
     }
-    // The trigger rejects bad invite codes as a database error.
-    if (error.message.toLowerCase().includes("database error")) {
-      return { ok: false, error: "Kayıt reddedildi: davet kodunu kontrol et." };
+    // The trigger rejects bad invite codes; GoTrue relays its message.
+    if (
+      error.message.includes("invalid invite code") ||
+      error.message.toLowerCase().includes("database error")
+    ) {
+      return { ok: false, error: "Davet kodu hatalı." };
     }
     return { ok: false, error: "Kayıt başarısız: " + error.message };
   }
