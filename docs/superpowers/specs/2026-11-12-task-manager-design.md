@@ -84,13 +84,31 @@ Değerlendirilen üç mimari:
   açılır. Kod admin panelinden görüntülenir ve yenilenebilir
   (`app_settings` benzeri tek satırlık tabloda tutulur).
 - İki rol: **admin** ve **üye**. Adminler: departman atama, her görevde
-  tam yetki, görev silme, admin yapma/çıkarma, davet kodu yönetimi.
+  tam yetki, görev silme, admin yapma/çıkarma, davet kodu yönetimi,
+  üye pasifleştirme.
 - Yeni üye kayıtta departmanını seçer; admin sonradan değiştirebilir.
+- E-posta doğrulama **kapalı** (davet kodu zaten kapı görevi görüyor;
+  Supabase'in yerleşik e-posta servisi düşük limitli). Şifre sıfırlama
+  Supabase'in yerleşik e-postasıyla yapılır — sıfırlama nadirdir, limit
+  yeterli; sorun olursa ücretsiz bir SMTP'ye geçiş README'de not edilir.
+  [geliştirici kararı]
+- **Bootstrap:** seed migration ilk davet kodunu oluşturur; **ilk kayıt
+  olan kullanıcı otomatik admin olur** ve bu README'de açıkça yazılır.
+  [geliştirici kararı]
+- **Üye ayrılması:** `profiles.is_active` bayrağı; admin panelinden
+  pasifleştirilen üye giriş yapamaz, geçmiş görevlerindeki sorumlu
+  bilgisi korunur, görevleri yeniden atanabilir. Auth kullanıcısı
+  silinmez. [geliştirici kararı]
 
 ### Yetki modeli
 - **Okuma:** giriş yapmış herkes her board'u ve her görevi görür.
+- **Oluşturma:** herkes her board'a görev açabilir (kullanıcı kararı;
+  departmanlar arası çalışma yaygın, silme zaten admin'de).
 - **Yazma:** kendi departmanının board'undaki görevler + departman
-  fark etmeksizin sorumlusu olduğu görevler. Adminler her yerde.
+  fark etmeksizin sorumlusu olduğu görevler. Sorumlu, görevin tüm
+  alanlarını düzenleyebilir; görevi başkasına devredebilir (devrettiği
+  an, görev kendi departmanında değilse yazma yetkisi biter).
+  [geliştirici kararı] Adminler her yerde.
 - **Silme:** yalnız adminler.
 - Bu kurallar Server Action'larda uygulanır; RLS aynı kuralları
   veritabanı seviyesinde ikinci kilit olarak tekrarlar.
@@ -101,9 +119,11 @@ Değerlendirilen üç mimari:
 - `profiles`: auth kullanıcısına 1-1; ad soyad, `department_id`,
   `is_admin`.
 - `tasks`: `title`, `description`, `department_id` (board),
-  `assignee_id` (herhangi bir üye), `status`
-  (`todo | in_progress | blocked | done`), `deadline`, `created_by`,
-  zaman damgaları.
+  `assignee_id` (herhangi bir üye, **boş olabilir**), `status`
+  (`todo | in_progress | blocked | done`), `deadline` (**boş
+  olabilir**), `created_by`, zaman damgaları. Sorumsuz görevleri kendi
+  departmanının üyeleri ve adminler düzenler (mevcut yazma kuralı zaten
+  kapsıyor). [geliştirici kararı]
 - `attachments`: `task_id`, tür (`file | link`), dosya yolu veya URL,
   görünen ad.
 
@@ -111,6 +131,9 @@ Değerlendirilen üç mimari:
 - Giriş / kayıt (davet kodlu).
 - Departman board'u: 4 kolonlu kanban, sürükle-bırak (@dnd-kit),
   Realtime ile canlı. Departmanlar arası geçiş için switcher.
+  "Tamamlandı" kolonu yalnız **son 30 günde** tamamlananları gösterir;
+  eski kayıtlar veritabanında kalır (sezon boyunca kolonun şişmemesi
+  için). [geliştirici kararı]
 - Görev detayı: oluşturma/düzenleme formu ve ekler.
 - Görevlerim: deadline sıralı liste.
 - Admin paneli: tek sayfa.
