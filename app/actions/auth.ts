@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionResult } from "@/lib/types";
 
 export async function signUp(formData: FormData): Promise<ActionResult> {
@@ -19,18 +18,9 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: "Şifre en az 6 karakter olmalı." };
   }
 
-  // Friendly pre-check. The database trigger enforces the same rule, so a
-  // direct API call with a wrong code fails there too.
-  const admin = createAdminClient();
-  const { data: settings } = await admin
-    .from("app_settings")
-    .select("invite_code")
-    .eq("id", 1)
-    .maybeSingle();
-  if (!settings || settings.invite_code !== inviteCode) {
-    return { ok: false, error: "Davet kodu hatalı." };
-  }
-
+  // The invite code is validated ONLY by the database trigger
+  // (handle_new_user): routing every attempt through auth.signUp keeps
+  // Supabase's built-in rate limiting in front of code guesses.
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email,
@@ -47,6 +37,10 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   if (error) {
     if (error.message.includes("already registered")) {
       return { ok: false, error: "Bu e-posta ile zaten bir hesap var." };
+    }
+    // The trigger rejects bad invite codes as a database error.
+    if (error.message.toLowerCase().includes("database error")) {
+      return { ok: false, error: "Kayıt reddedildi: davet kodunu kontrol et." };
     }
     return { ok: false, error: "Kayıt başarısız: " + error.message };
   }
