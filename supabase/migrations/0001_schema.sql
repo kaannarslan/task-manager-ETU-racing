@@ -53,9 +53,20 @@ create table attachments (
 create index attachments_task_idx on attachments (task_id);
 
 -- Create a profile row for every new auth user, from the signup metadata.
+-- Also enforces the invite code at the database level: the signup API is
+-- publicly callable with the anon key, so the server action's check alone
+-- would be bypassable.
 create function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
+declare
+  valid_code text;
 begin
+  select invite_code into valid_code from public.app_settings where id = 1;
+  if valid_code is null
+     or new.raw_user_meta_data ->> 'invite_code' is distinct from valid_code then
+    raise exception 'invalid invite code';
+  end if;
+
   insert into public.profiles (id, full_name, department_id)
   values (
     new.id,
