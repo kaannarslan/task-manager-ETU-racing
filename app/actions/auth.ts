@@ -58,9 +58,21 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     return { ok: false, error: "E-posta veya şifre hatalı." };
+  }
+
+  // Deactivated members can still authenticate; refuse them here with a
+  // clear message (RLS hides an inactive member's own profile row).
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_active")
+    .eq("id", data.user.id)
+    .maybeSingle();
+  if (!profile?.is_active) {
+    await supabase.auth.signOut();
+    return { ok: false, error: "Hesabınız pasif durumda." };
   }
   redirect("/");
 }
