@@ -14,6 +14,14 @@ export function groupTasksByStatus<T extends BoardTask>(tasks: T[]): Record<Task
   return groups;
 }
 
+// Görevlerim: open tasks first, recently done ones in their own group.
+export function splitMyTasks<T extends BoardTask>(tasks: T[]): { open: T[]; done: T[] } {
+  return {
+    open: sortByDeadline(tasks.filter((t) => t.status !== "done")),
+    done: sortByDeadline(tasks.filter((t) => t.status === "done")),
+  };
+}
+
 // `today` is a local date as YYYY-MM-DD, the same format as tasks.deadline.
 export function isOverdue(task: BoardTask, today: string): boolean {
   if (task.status === "done" || task.deadline === null) return false;

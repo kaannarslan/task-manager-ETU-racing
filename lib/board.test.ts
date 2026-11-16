@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { doneCutoffIso, formatDeadline, groupTasksByStatus, isOverdue, todayInIstanbul } from "@/lib/board";
+import { doneCutoffIso, formatDeadline, groupTasksByStatus, isOverdue, splitMyTasks, todayInIstanbul } from "@/lib/board";
 import type { TaskStatus } from "@/lib/types";
 
 function t(id: string, status: TaskStatus, deadline: string | null = null) {
@@ -59,5 +59,19 @@ describe("todayInIstanbul", () => {
 describe("formatDeadline", () => {
   test("formats a date as a short Turkish day and month", () => {
     expect(formatDeadline("2026-11-05")).toBe("5 Kas");
+  });
+});
+
+describe("splitMyTasks", () => {
+  test("separates done tasks from open ones, each sorted by deadline with nulls last", () => {
+    const { open, done } = splitMyTasks([
+      t("open-none", "todo", null),
+      t("done-late", "done", "2026-11-30"),
+      t("open-late", "blocked", "2026-12-01"),
+      t("open-soon", "in_progress", "2026-11-18"),
+      t("done-soon", "done", "2026-11-01"),
+    ]);
+    expect(open.map((x) => x.id)).toEqual(["open-soon", "open-late", "open-none"]);
+    expect(done.map((x) => x.id)).toEqual(["done-soon", "done-late"]);
   });
 });
