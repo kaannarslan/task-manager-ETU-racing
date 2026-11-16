@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth";
 import { canDeleteTask, canEditTask } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { isAttachmentPathForTask } from "@/lib/storage-path";
 import { STATUSES, type ActionResult, type Task, type TaskStatus } from "@/lib/types";
 
 const NO_SESSION = "Oturum bulunamadı.";
@@ -137,8 +138,11 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
     .select("url")
     .eq("task_id", taskId)
     .eq("kind", "file");
-  if (files?.length) {
-    await supabase.storage.from("attachments").remove(files.map((f) => f.url));
+  // Only paths inside this task's folder: a forged attachment row must not
+  // make an admin's delete remove another task's files.
+  const paths = (files ?? []).map((f) => f.url).filter((url) => isAttachmentPathForTask(taskId, url));
+  if (paths.length) {
+    await supabase.storage.from("attachments").remove(paths);
   }
 
   const { data, error } = await supabase.from("tasks").delete().eq("id", taskId).select("id");

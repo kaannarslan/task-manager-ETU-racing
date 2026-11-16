@@ -124,7 +124,8 @@ export async function removeAttachment(attachmentId: string): Promise<ActionResu
     .select("id");
   if (error || !data?.length) return { ok: false, error: "Ek silinemedi." };
 
-  if (attachment.kind === "file") {
+  // Same folder check as on insert: never delete outside this task's folder.
+  if (attachment.kind === "file" && isAttachmentPathForTask(attachment.task_id, attachment.url)) {
     await supabase.storage.from(BUCKET).remove([attachment.url]);
   }
 
