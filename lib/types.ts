@@ -51,3 +51,7 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
   blocked: "Blokeli",
   done: "Tamamlandı",
 };
+
+export type TaskWithAssignee = Task & {
+  assignee: Pick<Profile, "id" | "full_name"> | null;
+};
