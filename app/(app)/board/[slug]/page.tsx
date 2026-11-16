@@ -25,7 +25,7 @@ export default async function BoardPage({ params }: PageProps<"/board/[slug]">) 
     supabase
       .from("tasks")
       .select(
-        "id, title, description, department_id, assignee_id, status, deadline, completed_at, created_by, assignee:profiles!assignee_id(id, full_name)",
+        "id, title, description, department_id, assignee_id, status, deadline, completed_at, created_by, assignee:profiles!assignee_id(id, full_name), attachments(id, task_id, kind, url, display_name)",
       )
       .eq("department_id", department.id)
       .or(`status.neq.done,completed_at.gt."${doneCutoffIso(new Date())}"`),
@@ -38,13 +38,13 @@ export default async function BoardPage({ params }: PageProps<"/board/[slug]">) 
 
   return (
     <div className="mx-auto max-w-screen-2xl px-4 py-6">
-      <h1 className="mb-5 text-xl font-semibold tracking-tight">{department.name}</h1>
       <Board
         tasks={(tasks ?? []) as unknown as TaskWithAssignee[]}
         profiles={(profiles ?? []) as Profile[]}
         departmentId={department.id}
         currentUser={user}
         today={todayInIstanbul()}
+        heading={<h1 className="text-xl font-semibold tracking-tight">{department.name}</h1>}
       />
     </div>
   );

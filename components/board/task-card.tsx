@@ -12,10 +12,12 @@ export function TaskCard({
   task,
   today,
   draggable,
+  onOpen,
 }: {
   task: TaskWithAssignee;
   today: string;
   draggable: boolean;
+  onOpen: () => void;
 }) {
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
     id: task.id,
@@ -25,8 +27,21 @@ export function TaskCard({
   return (
     <div
       ref={setNodeRef}
-      {...(draggable ? { ...attributes, ...listeners } : {})}
-      className={cn(isDragging && "opacity-40", draggable && "cursor-grab touch-none")}
+      {...(draggable ? { ...attributes, ...listeners } : { role: "button", tabIndex: 0 })}
+      // Clicks open the task; a drag needs 5px of movement, so they don't clash.
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (!draggable && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      aria-label={`${task.title} görevini aç`}
+      className={cn(
+        "rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        isDragging && "opacity-40",
+        draggable ? "cursor-grab touch-none" : "cursor-pointer",
+      )}
     >
       <TaskCardView task={task} today={today} showHandle={draggable} />
     </div>

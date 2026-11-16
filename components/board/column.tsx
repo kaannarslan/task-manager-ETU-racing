@@ -17,11 +17,13 @@ export function Column({
   tasks,
   today,
   canDrag,
+  onOpen,
 }: {
   status: TaskStatus;
   tasks: TaskWithAssignee[];
   today: string;
   canDrag: (task: TaskWithAssignee) => boolean;
+  onOpen: (task: TaskWithAssignee) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
@@ -40,7 +42,7 @@ export function Column({
       </header>
       <div className="flex flex-1 flex-col gap-2">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} today={today} draggable={canDrag(task)} />
+          <TaskCard key={task.id} task={task} today={today} draggable={canDrag(task)} onOpen={() => onOpen(task)} />
         ))}
         {tasks.length === 0 && (
           <p className="px-2 py-4 text-center text-xs text-zinc-400">Görev yok</p>
